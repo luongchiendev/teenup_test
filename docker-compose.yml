@@ -1,0 +1,46 @@
+services:
+  lms_db:
+    image: mysql:8.0.33 # bản ổn định, tránh lỗi 8.0.43
+    container_name: lms_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: lmsdb
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin123
+    ports:
+      - "3307:3306" # ngoài máy bạn truy cập cổng 3307
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  lms_backend:
+    build: ./backend
+    container_name: lms_backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    depends_on:
+      lms_db:
+        condition: service_healthy
+    environment:
+      DB_HOST: lms_db
+      DB_PORT: 3306
+      DB_USER: admin
+      DB_PASSWORD: admin123
+      DB_NAME: lmsdb
+      NODE_ENV: development
+
+  lms_frontend:
+    build: ./frontend
+    container_name: lms_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - lms_backend
