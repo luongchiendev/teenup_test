@@ -1,8 +1,19 @@
 import React, { useContext } from "react";
 import { AppContext } from "../context/AppContext";
+import {
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Typography,
+  Box,
+} from "@mui/material";
+
+const drawerWidth = 240;
 
 export default function Sidebar() {
-  const { setSelectedMenu } = useContext(AppContext);
+  const { setSelectedMenu, selectedMenu } = useContext(AppContext);
 
   const menus = [
     { key: "parents", label: "Quản lý Phụ huynh" },
@@ -12,32 +23,36 @@ export default function Sidebar() {
   ];
 
   return (
-    <div
-      style={{
-        width: "200px",
-        backgroundColor: "#f0f0f0",
-        height: "100vh",
-        padding: "10px",
+    <Drawer
+      variant="permanent"
+      anchor="left"
+      sx={{
+        width: drawerWidth,
+        flexShrink: 0,
+        "& .MuiDrawer-paper": {
+          width: drawerWidth,
+          boxSizing: "border-box",
+          bgcolor: "#f7f7f7",
+        },
       }}
     >
-      <h2 style={{ fontWeight: "bold", marginBottom: "10px" }}>Menu</h2>
-      <ul style={{ listStyle: "none", padding: 0 }}>
-        {menus.map((m) => (
-          <li
-            key={m.key}
-            style={{
-              padding: "8px",
-              cursor: "pointer",
-              borderRadius: "4px",
-              marginBottom: "4px",
-              backgroundColor: "#fff",
-            }}
-            onClick={() => setSelectedMenu(m.key)}
-          >
-            {m.label}
-          </li>
-        ))}
-      </ul>
-    </div>
+      <Box sx={{ p: 2 }}>
+        <Typography variant="h6" fontWeight="bold" gutterBottom>
+          Menu
+        </Typography>
+        <List>
+          {menus.map((m) => (
+            <ListItem key={m.key} disablePadding>
+              <ListItemButton
+                selected={selectedMenu === m.key}
+                onClick={() => setSelectedMenu(m.key)}
+              >
+                <ListItemText primary={m.label} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+      </Box>
+    </Drawer>
   );
 }

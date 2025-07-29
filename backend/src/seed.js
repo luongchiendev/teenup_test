@@ -1,9 +1,9 @@
 // seed.js
 const sequelize = require("./config/sequelize");
-const Parent = require("./server/parents/parent.model");
-const Student = require("./server/students/student.model");
-const Class = require("./server/classess/classess.model");
-const ClassRegistration = require("./server/classRegistration/classRegistration.model");
+const Parent = require("./models/parent.model");
+const Student = require("./models/students.model");
+const Class = require("./models/classes.model");
+const ClassRegistration = require("./models/classesRegistation.model");
 
 (async () => {
   try {
@@ -20,9 +20,9 @@ const ClassRegistration = require("./server/classRegistration/classRegistration.
 
     // 2. Students
     const [s1, s2, s3] = await Promise.all([
-      Student.create({ name: "Nguyễn Văn C", gender: "male", current_grade: "A", parentId: p1.id }),
-      Student.create({ name: "Trần Thị D", gender: "male", current_grade: "A", parentId: p2.id }),
-      Student.create({ name: "Lê Văn E", gender: "male",current_grade: "A", parentId: p1.id }),
+      Student.create({ name: "Nguyễn Văn C", gender: "male", dob: "05-07-2009", current_grade: "A", parentId: p1.id }),
+      Student.create({ name: "Trần Thị D", gender: "male", dob: "05-07-2009", current_grade: "A", parentId: p2.id }),
+      Student.create({ name: "Lê Văn E", gender: "male", dob: "05-07-2009", current_grade: "A", parentId: p1.id }),
     ]);
 
     // 3. Classes

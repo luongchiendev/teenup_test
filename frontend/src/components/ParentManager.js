@@ -1,7 +1,21 @@
 import React, { useState, useContext, useEffect } from "react";
 import { AppContext } from "../context/AppContext";
 import axios from "axios";
-const { BACKEND_URL } = require('../urlConfig');
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Paper,
+  Stack,
+} from "@mui/material";
+
+const { BACKEND_URL } = require("../urlConfig");
 
 export default function ParentManager() {
   const { parents, setParents } = useContext(AppContext);
@@ -12,7 +26,6 @@ export default function ParentManager() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    // Khi parents hoặc search thay đổi, filter lại
     const result = parents.filter(
       (p) =>
         p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -23,35 +36,18 @@ export default function ParentManager() {
 
   const getListParents = async () => {
     try {
-     const response = await axios.get(
-      `${BACKEND_URL}/parents`,
-      // {
-      //   name: form.name,
-      //   phone: form.phone,
-      //   email: form.email,
-      // },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          // Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
+      const response = await axios.get(`${BACKEND_URL}/parents`);
+      if (response) {
+        setParents(response.data);
       }
-    );
-    if(response){
-      setParents(response.data);
+    } catch (err) {
+      setMessage("Lỗi: " + (err.response?.data?.message || err.message));
     }
-  }
-  catch (err) {
-      setMessage(" Lỗi: " + (err.response?.data?.message || err.message));
-    }
-}
+  };
 
-useEffect(() => {
-const callApi = async () => {
-  await getListParents();
-}
-callApi();
-}, [])
+  useEffect(() => {
+    getListParents();
+  }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -60,176 +56,137 @@ callApi();
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-     const response = await axios.post(
-      `${BACKEND_URL}/parents`,
-      {
-        name: form.name,
-        phone: form.phone,
-        email: form.email,
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          // Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
+      const response = await axios.post(`${BACKEND_URL}/parents`, form);
+      if (response) {
+        setParents((prev) => [...prev, response.data]);
+        setForm({ name: "", phone: "", email: "" });
+        setShowForm(false);
       }
-    );
-    if(response){
-       setParents((prev) => [...prev, response.data]);
-       setForm({ name: "", phone: "", email: "" });
-    }
-
     } catch (err) {
-      setMessage(" Lỗi: " + (err.response?.data?.message || err.message));
+      setMessage("Lỗi: " + (err.response?.data?.message || err.message));
     }
   };
 
   return (
-    <div style={{ maxWidth: "600px" }}>
-      <h2 style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "10px" }}>
+    <Box sx={{ maxWidth: 800 }}>
+      <Typography variant="h5" fontWeight="bold" mb={2}>
         Quản lý Phụ huynh
-      </h2>
+      </Typography>
 
-      {/* Thanh tìm kiếm */}
-      <div style={{ display: "flex", gap: "8px", marginBottom: "10px" }}>
-        <input
-          type="text"
-          placeholder="Tìm theo tên hoặc số điện thoại..."
+      {/* Tìm kiếm + Thêm mới */}
+      <Stack direction="row" spacing={2} mb={2} >
+        <TextField
+          fullWidth
+          size="small"
+          label="Tìm theo tên hoặc số điện thoại"
+          variant="outlined"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{
-            flex: 1,
-            padding: "6px",
-            border: "1px solid #ccc",
-            borderRadius: "4px",
-          }}
         />
-        <button
+        <Button
+          variant="contained"
+          color="success"
           onClick={() => setShowForm(true)}
-          style={{
-            padding: "6px 10px",
-            background: "#4CAF50",
-            color: "#fff",
-            border: "none",
-            borderRadius: "4px",
-          }}
+          style={{ width: "137px" }}
         >
-          + Thêm mới
-        </button>
-      </div>
+          Thêm Mới
+        </Button>
+      </Stack>
 
-      {/* Danh sách Parents */}
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          background: "#fff",
-        }}
-      >
-        <thead>
-          <tr style={{ background: "#f0f0f0" }}>
-            <th style={{ border: "1px solid #ccc", padding: "6px" }}>Tên</th>
-            <th style={{ border: "1px solid #ccc", padding: "6px" }}>SĐT</th>
-            <th style={{ border: "1px solid #ccc", padding: "6px" }}>Email</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredParents.map((p) => (
-            <tr key={p.id}>
-              <td style={{ border: "1px solid #ccc", padding: "6px" }}>
-                {p.name}
-              </td>
-              <td style={{ border: "1px solid #ccc", padding: "6px" }}>
-                {p.phone}
-              </td>
-              <td style={{ border: "1px solid #ccc", padding: "6px" }}>
-                {p.email}
-              </td>
-            </tr>
-          ))}
-          {filteredParents.length === 0 && (
-            <tr>
-              <td
-                colSpan={3}
-                style={{ border: "1px solid #ccc", padding: "6px", textAlign: "center" }}
-              >
-                Không tìm thấy phụ huynh nào
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      {/* Bảng danh sách */}
+      <Paper>
+        <Table>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: "#f0f0f0" }}>
+              <TableCell>Tên</TableCell>
+              <TableCell>SĐT</TableCell>
+              <TableCell>Email</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filteredParents.length > 0 ? (
+              filteredParents.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell>{p.name}</TableCell>
+                  <TableCell>{p.phone}</TableCell>
+                  <TableCell>{p.email}</TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={3} align="center">
+                  Không tìm thấy phụ huynh nào
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Paper>
 
       {/* Form thêm mới */}
       {showForm && (
-        <div
-          style={{
-            marginTop: "15px",
-            padding: "10px",
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          sx={{
+            mt: 3,
+            p: 2,
             border: "1px solid #ccc",
-            borderRadius: "8px",
-            background: "#f9f9f9",
+            borderRadius: 2,
+            bgcolor: "#f9f9f9",
           }}
         >
-          <h3 style={{ fontWeight: "bold", marginBottom: "6px" }}>Thêm phụ huynh</h3>
-          <form
-            onSubmit={handleSubmit}
-            style={{ display: "flex", flexDirection: "column", gap: "6px" }}
-          >
-            <input
+          <Typography variant="h6" fontWeight="bold" mb={2}>
+            Thêm phụ huynh
+          </Typography>
+
+          <Stack spacing={2}>
+            <TextField
               name="name"
+              label="Tên"
+              variant="outlined"
+              required
               value={form.name}
-              placeholder="Tên"
               onChange={handleChange}
-              required
-              style={{ padding: "6px", border: "1px solid #ccc", borderRadius: "4px" }}
             />
-            <input
+            <TextField
               name="phone"
-              value={form.phone}
-              placeholder="Số điện thoại"
-              onChange={handleChange}
+              label="Số điện thoại"
+              variant="outlined"
               required
-              style={{ padding: "6px", border: "1px solid #ccc", borderRadius: "4px" }}
-            />
-            <input
-              name="email"
-              value={form.email}
-              placeholder="Email"
+              value={form.phone}
               onChange={handleChange}
-              style={{ padding: "6px", border: "1px solid #ccc", borderRadius: "4px" }}
             />
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                type="submit"
-                style={{
-                  padding: "6px",
-                  background: "#4CAF50",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "4px",
-                }}
-              >
+            <TextField
+              name="email"
+              label="Email"
+              variant="outlined"
+              value={form.email}
+              onChange={handleChange}
+            />
+
+            <Stack direction="row" spacing={2}>
+              <Button type="submit" variant="contained" color="success">
                 Lưu
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="outlined"
+                color="secondary"
                 onClick={() => setShowForm(false)}
-                style={{
-                  padding: "6px",
-                  background: "#ccc",
-                  border: "none",
-                  borderRadius: "4px",
-                }}
               >
                 Hủy
-              </button>
-            </div>
-          </form>
-        </div>
+              </Button>
+            </Stack>
+          </Stack>
+        </Box>
       )}
 
-      {message && <p style={{ marginTop: "8px" }}>{message}</p>}
-    </div>
+      {message && (
+        <Typography color="error" mt={2}>
+          {message}
+        </Typography>
+      )}
+    </Box>
   );
 }

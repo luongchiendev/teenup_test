@@ -3,9 +3,10 @@ import Sidebar from "./components/Sidebar";
 import ParentManager from "./components/ParentManager";
 import StudentManager from "./components/StudentManager";
 import ClassSchedule from "./components/ClassSchedule";
-// import RegisterClassForm from "./components/RegisterClassForm";
 import { AppContext } from "./context/AppContext";
 import SubscriptionManager from "./components/Subscription";
+
+import { Box, Container, Typography, Paper } from "@mui/material";
 
 function App() {
   const { selectedMenu } = useContext(AppContext);
@@ -21,20 +22,23 @@ function App() {
       case "register":
         return <SubscriptionManager />;
       default:
-        return <div>Chọn menu bên trái</div>;
+        return <Typography variant="body1">Chọn menu bên trái</Typography>;
     }
   };
 
   return (
-    <div style={{ display: "flex" }}>
+    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#f5f5f5" }}>
       <Sidebar />
-      <div style={{ flex: 1, padding: "20px" }}>
-        <h1 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "10px" }}>
-          Mini LMS
-        </h1>
-        {renderContent()}
-      </div>
-    </div>
+
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Paper elevation={3} sx={{ p: 3 }}>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Mini LMS
+          </Typography>
+          {renderContent()}
+        </Paper>
+      </Container>
+    </Box>
   );
 }
 

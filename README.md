@@ -117,7 +117,7 @@ docker-compose --env-file .env.docker up --build
 Chạy lệnh sau khi container MySQL & backend đã chạy:
 
 ```bash
-docker compose exec lms_backend node seed.js
+docker compose exec lms_backend node src/seed.js
 ```
 
 ### **Dữ liệu được seed**

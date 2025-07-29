@@ -1,11 +1,29 @@
 import React, { useState, useContext, useEffect } from "react";
 import { AppContext } from "../context/AppContext";
 import axios from "axios";
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Paper,
+  Stack,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
+} from "@mui/material";
+
 const { BACKEND_URL } = require("../urlConfig");
 
 export default function StudentManager() {
-  const { students, setStudents, parents } = useContext(AppContext); 
-  // parents được load sẵn từ AppContext để chọn Parent cho Student
+  const { students, setStudents, parents } = useContext(AppContext);
+
   const [search, setSearch] = useState("");
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -29,11 +47,7 @@ export default function StudentManager() {
 
   const getListStudents = async () => {
     try {
-      const response = await axios.get(`${BACKEND_URL}/students`, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await axios.get(`${BACKEND_URL}/students`);
       if (response) {
         setStudents(response.data);
       }
@@ -43,10 +57,7 @@ export default function StudentManager() {
   };
 
   useEffect(() => {
-    const callApi = async () => {
-      await getListStudents();
-    };
-    callApi();
+    getListStudents();
   }, []);
 
   const handleChange = (e) => {
@@ -56,21 +67,7 @@ export default function StudentManager() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(
-        `${BACKEND_URL}/students`,
-        {
-          name: form.name,
-          dob: form.dob,
-          gender: form.gender,
-          current_grade: form.current_grade,
-          parentId: form.parentId,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await axios.post(`${BACKEND_URL}/students`, form);
       if (response) {
         setMessage("✅ Thêm học sinh thành công!");
         setForm({
@@ -81,210 +78,168 @@ export default function StudentManager() {
           parentId: "",
         });
         setShowForm(false);
-        getListStudents(); // load lại danh sách
+        getListStudents();
       }
     } catch (err) {
-      setMessage(" Lỗi: " + (err.response?.data?.message || err.message));
+      setMessage("❌ Lỗi: " + (err.response?.data?.message || err.message));
     }
   };
 
   return (
-    <div style={{ maxWidth: "700px" }}>
-      <h2 style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "10px" }}>
+    <Box sx={{ maxWidth: 900 }}>
+      <Typography variant="h5" fontWeight="bold" mb={2}>
         Quản lý Học sinh
-      </h2>
+      </Typography>
 
-      {/* Thanh tìm kiếm */}
-      <div style={{ display: "flex", gap: "8px", marginBottom: "10px" }}>
-        <input
-          type="text"
-          placeholder="Tìm theo tên hoặc lớp..."
+      {/* Tìm kiếm + Thêm mới */}
+      <Stack direction="row" spacing={2} mb={2}>
+        <TextField
+          fullWidth
+          size="small"
+          label="Tìm theo tên hoặc lớp"
+          variant="outlined"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{
-            flex: 1,
-            padding: "6px",
-            border: "1px solid #ccc",
-            borderRadius: "4px",
-          }}
         />
-        <button
+        <Button
+          variant="contained"
+          color="success"
           onClick={() => setShowForm(true)}
-          style={{
-            padding: "6px 10px",
-            background: "#4CAF50",
-            color: "#fff",
-            border: "none",
-            borderRadius: "4px",
-          }}
         >
           + Thêm mới
-        </button>
-      </div>
+        </Button>
+      </Stack>
 
-      {/* Danh sách Students */}
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          background: "#fff",
-        }}
-      >
-        <thead>
-          <tr style={{ background: "#f0f0f0" }}>
-            <th style={{ border: "1px solid #ccc", padding: "6px" }}>Tên</th>
-            <th style={{ border: "1px solid #ccc", padding: "6px" }}>Ngày sinh</th>
-            <th style={{ border: "1px solid #ccc", padding: "6px" }}>Giới tính</th>
-            <th style={{ border: "1px solid #ccc", padding: "6px" }}>Lớp</th>
-            <th style={{ border: "1px solid #ccc", padding: "6px" }}>Phụ huynh</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredStudents.map((s) => (
-            <tr key={s.id}>
-              <td style={{ border: "1px solid #ccc", padding: "6px" }}>{s.name}</td>
-              <td style={{ border: "1px solid #ccc", padding: "6px" }}>{s.dob}</td>
-              <td style={{ border: "1px solid #ccc", padding: "6px" }}>{s.gender}</td>
-              <td style={{ border: "1px solid #ccc", padding: "6px" }}>
-                {s.current_grade || "-"}
-              </td>
-              <td style={{ border: "1px solid #ccc", padding: "6px" }}>
-                {s.Parent?.name || "-"}
-              </td>
-            </tr>
-          ))}
-          {filteredStudents.length === 0 && (
-            <tr>
-              <td
-                colSpan={5}
-                style={{
-                  border: "1px solid #ccc",
-                  padding: "6px",
-                  textAlign: "center",
-                }}
-              >
-                Không tìm thấy học sinh nào
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      {/* Bảng danh sách học sinh */}
+      <Paper>
+        <Table>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: "#f0f0f0" }}>
+              <TableCell>Tên</TableCell>
+              <TableCell>Ngày sinh</TableCell>
+              <TableCell>Giới tính</TableCell>
+              <TableCell>Lớp</TableCell>
+              <TableCell>Phụ huynh</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filteredStudents.length > 0 ? (
+              filteredStudents.map((s) => (
+                <TableRow key={s.id}>
+                  <TableCell>{s.name}</TableCell>
+                  <TableCell>{s.dob}</TableCell>
+                  <TableCell>{s.gender}</TableCell>
+                  <TableCell>{s.current_grade || "-"}</TableCell>
+                  <TableCell>{s.Parent?.name || "-"}</TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={5} align="center">
+                  Không tìm thấy học sinh nào
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Paper>
 
       {/* Form thêm mới */}
       {showForm && (
-        <div
-          style={{
-            marginTop: "15px",
-            padding: "10px",
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          sx={{
+            mt: 3,
+            p: 2,
             border: "1px solid #ccc",
-            borderRadius: "8px",
-            background: "#f9f9f9",
+            borderRadius: 2,
+            bgcolor: "#f9f9f9",
           }}
         >
-          <h3 style={{ fontWeight: "bold", marginBottom: "6px" }}>Thêm học sinh</h3>
-          <form
-            onSubmit={handleSubmit}
-            style={{ display: "flex", flexDirection: "column", gap: "6px" }}
-          >
-            <input
+          <Typography variant="h6" fontWeight="bold" mb={2}>
+            Thêm học sinh
+          </Typography>
+
+          <Stack spacing={2}>
+            <TextField
               name="name"
-              value={form.name}
-              placeholder="Tên"
-              onChange={handleChange}
+              label="Tên"
+              variant="outlined"
               required
-              style={{
-                padding: "6px",
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-              }}
+              value={form.name}
+              onChange={handleChange}
             />
-            <input
+            <TextField
               type="date"
               name="dob"
+              label="Ngày sinh"
+              InputLabelProps={{ shrink: true }}
+              required
               value={form.dob}
               onChange={handleChange}
-              required
-              style={{
-                padding: "6px",
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-              }}
             />
-            <select
-              name="gender"
-              value={form.gender}
-              onChange={handleChange}
-              required
-              style={{
-                padding: "6px",
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-              }}
-            >
-              <option value="male">Nam</option>
-              <option value="female">Nữ</option>
-              <option value="other">Khác</option>
-            </select>
-            <input
-              name="current_grade"
-              value={form.current_grade}
-              placeholder="Lớp (ví dụ: Lớp 5)"
-              onChange={handleChange}
-              style={{
-                padding: "6px",
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-              }}
-            />
-            <select
-              name="parentId"
-              value={form.parentId}
-              onChange={handleChange}
-              required
-              style={{
-                padding: "6px",
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-              }}
-            >
-              <option value="">-- Chọn phụ huynh --</option>
-              {parents.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.phone})
-                </option>
-              ))}
-            </select>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                type="submit"
-                style={{
-                  padding: "6px",
-                  background: "#4CAF50",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "4px",
-                }}
+            <FormControl fullWidth>
+              <InputLabel id="gender-label">Giới tính</InputLabel>
+              <Select
+                labelId="gender-label"
+                name="gender"
+                value={form.gender}
+                label="Giới tính"
+                onChange={handleChange}
               >
+                <MenuItem value="male">Nam</MenuItem>
+                <MenuItem value="female">Nữ</MenuItem>
+                <MenuItem value="other">Khác</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              name="current_grade"
+              label="Lớp (ví dụ: Lớp 5)"
+              variant="outlined"
+              value={form.current_grade}
+              onChange={handleChange}
+            />
+            <FormControl fullWidth required>
+              <InputLabel id="parent-label">Phụ huynh</InputLabel>
+              <Select
+                labelId="parent-label"
+                name="parentId"
+                value={form.parentId}
+                label="Phụ huynh"
+                onChange={handleChange}
+              >
+                <MenuItem value="">-- Chọn phụ huynh --</MenuItem>
+                {parents.map((p) => (
+                  <MenuItem key={p.id} value={p.id}>
+                    {p.name} ({p.phone})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Stack direction="row" spacing={2}>
+              <Button type="submit" variant="contained" color="success">
                 Lưu
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="outlined"
+                color="secondary"
                 onClick={() => setShowForm(false)}
-                style={{
-                  padding: "6px",
-                  background: "#ccc",
-                  border: "none",
-                  borderRadius: "4px",
-                }}
               >
                 Hủy
-              </button>
-            </div>
-          </form>
-        </div>
+              </Button>
+            </Stack>
+          </Stack>
+        </Box>
       )}
 
-      {message && <p style={{ marginTop: "8px" }}>{message}</p>}
-    </div>
+      {message && (
+        <Typography mt={2} color={message.includes("✅") ? "success.main" : "error"}>
+          {message}
+        </Typography>
+      )}
+    </Box>
   );
 }

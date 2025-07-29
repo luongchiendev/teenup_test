@@ -1,4 +1,23 @@
 import React, { useEffect, useState } from "react";
+import {
+  Box,
+  Grid,
+  Paper,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  MenuItem,
+  Snackbar,
+  Select,
+  FormControl,
+  InputLabel,
+} from "@mui/material";
 import axios from "axios";
 const { BACKEND_URL } = require("../urlConfig");
 
@@ -7,7 +26,9 @@ export default function ClassSchedule() {
   const [students, setStudents] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState("");
-  const [showForm, setShowForm] = useState(false); // Thêm state show form tạo lớp
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+
   const [newClass, setNewClass] = useState({
     name: "",
     subject: "",
@@ -16,71 +37,6 @@ export default function ClassSchedule() {
     teacher_name: "",
     max_students: 20,
   });
-  const [message, setMessage] = useState("");
-
-  // Lấy danh sách classes & students
-  const fetchClasses = async () => {
-    try {
-      const resClasses = await axios.get(`${BACKEND_URL}/classes`);
-      const grouped = {};
-      resClasses.data.forEach((cls) => {
-        if (!grouped[cls.day_of_week]) grouped[cls.day_of_week] = [];
-        grouped[cls.day_of_week].push(cls);
-      });
-      setClassesByDay(grouped);
-    } catch (err) {
-      setMessage(" Lỗi: " + (err.response?.data?.message || err.message));
-    }
-  };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      await fetchClasses();
-      const resStudents = await axios.get(`${BACKEND_URL}/students`);
-      setStudents(resStudents.data);
-    };
-    fetchData();
-  }, []);
-
-  // Đăng ký lớp cho học sinh
-  const handleRegister = async () => {
-    if (!selectedStudent) {
-      setMessage(" Vui lòng chọn học sinh.");
-      return;
-    }
-    try {
-      await axios.post(`${BACKEND_URL}/classes/${selectedClass.id}/register`, {
-        classId: selectedClass.id,
-        studentId: selectedStudent,
-      });
-      setMessage("✅ Đăng ký thành công!");
-      setSelectedClass(null);
-      setSelectedStudent("");
-    } catch (err) {
-      setMessage(" " + (err.response?.data?.message || err.message));
-    }
-  };
-
-  // ✅ Tạo lớp mới
-  const handleCreateClass = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.post(`${BACKEND_URL}/classes`, newClass);
-      setMessage(" Tạo lớp thành công!");
-      setShowForm(false);
-      await fetchClasses(); // Cập nhật danh sách ngay
-      setNewClass({
-        name: "",
-        subject: "",
-        day_of_week: "1",
-        time_slot: "",
-        teacher_name: "",
-        max_students: 20,
-      });
-    } catch (err) {
-      setMessage(" " + (err.response?.data?.message || err.message));
-    }
-  };
 
   const dayNames = [
     "Thứ 2",
@@ -92,251 +48,222 @@ export default function ClassSchedule() {
     "Chủ nhật",
   ];
 
+  const fetchClasses = async () => {
+    try {
+      const res = await axios.get(`${BACKEND_URL}/classes`);
+      const grouped = {};
+      res.data.forEach((cls) => {
+        if (!grouped[cls.day_of_week]) grouped[cls.day_of_week] = [];
+        grouped[cls.day_of_week].push(cls);
+      });
+      setClassesByDay(grouped);
+    } catch (err) {
+      showSnackbar("Lỗi tải danh sách lớp", "error");
+    }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      const res = await axios.get(`${BACKEND_URL}/students`);
+      setStudents(res.data);
+    } catch (err) {
+      showSnackbar("Lỗi tải danh sách học sinh", "error");
+    }
+  };
+
+  useEffect(() => {
+    fetchClasses();
+    fetchStudents();
+  }, []);
+
+  const showSnackbar = (message, severity = "success") => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  const handleRegister = async () => {
+    if (!selectedStudent) {
+      showSnackbar("Vui lòng chọn học sinh", "warning");
+      return;
+    }
+    try {
+      await axios.post(`${BACKEND_URL}/classes/${selectedClass.id}/register`, {
+        studentId: selectedStudent,
+      });
+      showSnackbar("✅ Đăng ký thành công");
+      setSelectedClass(null);
+      setSelectedStudent("");
+    } catch (err) {
+      showSnackbar(err.response?.data?.message || "Lỗi đăng ký", "error");
+    }
+  };
+
+  const handleCreateClass = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post(`${BACKEND_URL}/classes`, newClass);
+      showSnackbar("Tạo lớp thành công!");
+      setShowCreateDialog(false);
+      fetchClasses();
+      setNewClass({
+        name: "",
+        subject: "",
+        day_of_week: "1",
+        time_slot: "",
+        teacher_name: "",
+        max_students: 20,
+      });
+    } catch (err) {
+      showSnackbar(err.response?.data?.message || "Lỗi tạo lớp", "error");
+    }
+  };
+
   return (
-    <div style={{ maxWidth: "900px", margin: "0 auto" }}>
-      <h2 style={{ fontSize: "20px", fontWeight: "bold", marginBottom: "10px" }}>
+    <Box sx={{ maxWidth: 1000, mx: "auto", p: 2 }}>
+      <Typography variant="h5" fontWeight="bold" mb={2}>
         Đăng ký lớp học cho học sinh
-      </h2>
+      </Typography>
 
-      {/*  Nút Tạo Lớp */}
-      <button
-        style={{
-          marginBottom: "10px",
-          padding: "6px 10px",
-          background: "#2196F3",
-          color: "#fff",
-          border: "none",
-          borderRadius: "4px",
-        }}
-        onClick={() => setShowForm(true)}
-      >
+      <Button variant="contained" color="primary" onClick={() => setShowCreateDialog(true)} sx={{ mb: 2 }}>
         + Tạo lớp mới
-      </button>
+      </Button>
 
-      {/* Bảng hiển thị lớp */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: "10px" }}>
-        {dayNames.map((day, index) => {
-          const dayIndex = index + 1;
+      <Grid container spacing={2}>
+        {dayNames.map((day, i) => {
+          const dayIndex = (i + 1).toString();
           const dayClasses = classesByDay[dayIndex] || [];
-
           return (
-            <div
-              key={dayIndex}
-              style={{
-                border: "1px solid #ccc",
-                borderRadius: "6px",
-                padding: "8px",
-                background: "#f9f9f9",
-              }}
-            >
-              <h4 style={{ textAlign: "center", marginBottom: "6px" }}>{day}</h4>
-              {dayClasses.length === 0 ? (
-                <p style={{ fontSize: "12px", textAlign: "center" }}>Không có lớp</p>
-              ) : (
-                dayClasses.map((cls) => (
-                  <div
-                    key={cls.id}
-                    style={{
-                      border: "1px solid #ddd",
-                      background: "#fff",
-                      padding: "6px",
-                      borderRadius: "4px",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    <div style={{ fontSize: "13px", fontWeight: "bold" }}>
-                      {cls.name} - {cls.subject}
-                    </div>
-                    <div style={{ fontSize: "12px", color: "#555" }}>
-                      {cls.time_slot} | GV: {cls.teacher_name}
-                    </div>
-                    <div style={{ fontSize: "11px", color: "#777" }}>
-                      Tối đa: {cls.max_students} HS
-                    </div>
-                    <button
-                      style={{
-                        marginTop: "4px",
-                        fontSize: "12px",
-                        padding: "4px 6px",
-                        background: "#4CAF50",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => setSelectedClass(cls)}
-                    >
-                      Đăng ký
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
+            <Grid item xs={12} sm={6} md={4} lg={3} key={dayIndex}>
+              <Paper sx={{ p: 1 }}>
+                <Typography variant="subtitle1" align="center" fontWeight="bold">
+                  {day}
+                </Typography>
+                {dayClasses.length === 0 ? (
+                  <Typography variant="body2" align="center">Không có lớp</Typography>
+                ) : (
+                  dayClasses.map((cls) => (
+                    <Card key={cls.id} variant="outlined" sx={{ mb: 1 }}>
+                      <CardContent>
+                        <Typography variant="subtitle2" fontWeight="bold">
+                          {cls.name} - {cls.subject}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          {cls.time_slot} | GV: {cls.teacher_name}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          Tối đa: {cls.max_students} HS
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          fullWidth
+                          sx={{ mt: 1 }}
+                          onClick={() => setSelectedClass(cls)}
+                        >
+                          Đăng ký
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </Paper>
+            </Grid>
           );
         })}
-      </div>
+      </Grid>
 
-      {/* Form đăng ký học sinh */}
-      {selectedClass && (
-        <div
-          style={{
-            marginTop: "20px",
-            padding: "10px",
-            border: "1px solid #ccc",
-            borderRadius: "6px",
-            background: "#fff",
-          }}
-        >
-          <h3 style={{ fontWeight: "bold", marginBottom: "8px" }}>
-            Đăng ký: {selectedClass.name} ({selectedClass.time_slot})
-          </h3>
-          <select
-            value={selectedStudent}
-            onChange={(e) => setSelectedStudent(e.target.value)}
-            style={{
-              padding: "6px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              width: "100%",
-              marginBottom: "8px",
-            }}
-          >
-            <option value="">-- Chọn học sinh --</option>
-            {students.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-          <button
-            style={{
-              padding: "6px 10px",
-              background: "#4CAF50",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              marginRight: "6px",
-            }}
-            onClick={handleRegister}
-          >
+      {/* Dialog đăng ký */}
+      <Dialog open={!!selectedClass} onClose={() => setSelectedClass(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>Đăng ký lớp: {selectedClass?.name}</DialogTitle>
+        <DialogContent>
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel id="student-select-label">Chọn học sinh</InputLabel>
+            <Select
+              labelId="student-select-label"
+              value={selectedStudent}
+              label="Chọn học sinh"
+              onChange={(e) => setSelectedStudent(e.target.value)}
+            >
+              {students.map((s) => (
+                <MenuItem key={s.id} value={s.id}>
+                  {s.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSelectedClass(null)}>Hủy</Button>
+          <Button onClick={handleRegister} variant="contained" color="success">
             Xác nhận
-          </button>
-          <button
-            style={{
-              padding: "6px 10px",
-              background: "#ccc",
-              border: "none",
-              borderRadius: "4px",
-            }}
-            onClick={() => setSelectedClass(null)}
-          >
-            Hủy
-          </button>
-        </div>
-      )}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-      {/* ✅ Form tạo lớp mới */}
-      {showForm && (
-        <div
-          style={{
-            marginTop: "20px",
-            padding: "10px",
-            border: "1px solid #ccc",
-            borderRadius: "6px",
-            background: "#f9f9f9",
-          }}
-        >
-          <h3 style={{ fontWeight: "bold", marginBottom: "6px" }}>Tạo lớp mới</h3>
-          <form
-            onSubmit={handleCreateClass}
-            style={{ display: "flex", flexDirection: "column", gap: "6px" }}
-          >
-            <input
-              placeholder="Tên lớp"
+      {/* Dialog tạo lớp */}
+      <Dialog open={showCreateDialog} onClose={() => setShowCreateDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Tạo lớp mới</DialogTitle>
+        <form onSubmit={handleCreateClass}>
+          <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <TextField
+              label="Tên lớp"
               value={newClass.name}
               onChange={(e) => setNewClass({ ...newClass, name: e.target.value })}
               required
-              style={{ padding: "6px", border: "1px solid #ccc", borderRadius: "4px" }}
             />
-            <input
-              placeholder="Môn học"
+            <TextField
+              label="Môn học"
               value={newClass.subject}
               onChange={(e) => setNewClass({ ...newClass, subject: e.target.value })}
               required
-              style={{ padding: "6px", border: "1px solid #ccc", borderRadius: "4px" }}
             />
-            <select
-              value={newClass.day_of_week}
-              onChange={(e) =>
-                setNewClass({ ...newClass, day_of_week: e.target.value })
-              }
-              style={{ padding: "6px", border: "1px solid #ccc", borderRadius: "4px" }}
-            >
-              {dayNames.map((d, i) => (
-                <option key={i + 1} value={i + 1}>
-                  {d}
-                </option>
-              ))}
-            </select>
-            <input
-              placeholder="Khung giờ (VD: 8h00 - 9h30)"
+            <FormControl fullWidth>
+              <InputLabel>Thứ</InputLabel>
+              <Select
+                value={newClass.day_of_week}
+                label="Thứ"
+                onChange={(e) => setNewClass({ ...newClass, day_of_week: e.target.value })}
+              >
+                {dayNames.map((d, i) => (
+                  <MenuItem key={i + 1} value={i + 1}>{d}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              label="Khung giờ"
               value={newClass.time_slot}
-              onChange={(e) =>
-                setNewClass({ ...newClass, time_slot: e.target.value })
-              }
+              onChange={(e) => setNewClass({ ...newClass, time_slot: e.target.value })}
               required
-              style={{ padding: "6px", border: "1px solid #ccc", borderRadius: "4px" }}
             />
-            <input
-              placeholder="Tên giáo viên"
+            <TextField
+              label="Giáo viên"
               value={newClass.teacher_name}
-              onChange={(e) =>
-                setNewClass({ ...newClass, teacher_name: e.target.value })
-              }
+              onChange={(e) => setNewClass({ ...newClass, teacher_name: e.target.value })}
               required
-              style={{ padding: "6px", border: "1px solid #ccc", borderRadius: "4px" }}
             />
-            <input
+            <TextField
+              label="Số học sinh tối đa"
               type="number"
-              placeholder="Số học sinh tối đa"
               value={newClass.max_students}
               onChange={(e) =>
                 setNewClass({ ...newClass, max_students: parseInt(e.target.value) })
               }
               required
-              style={{ padding: "6px", border: "1px solid #ccc", borderRadius: "4px" }}
             />
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                type="submit"
-                style={{
-                  padding: "6px",
-                  background: "#2196F3",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "4px",
-                }}
-              >
-                Lưu
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                style={{
-                  padding: "6px",
-                  background: "#ccc",
-                  border: "none",
-                  borderRadius: "4px",
-                }}
-              >
-                Hủy
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowCreateDialog(false)}>Hủy</Button>
+            <Button type="submit" variant="contained">Lưu</Button>
+          </DialogActions>
+        </form>
+      </Dialog>
 
-      {message && <p style={{ marginTop: "10px", fontWeight: "bold" }}>{message}</p>}
-    </div>
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        message={snackbar.message}
+      />
+    </Box>
   );
 }
