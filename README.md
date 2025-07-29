@@ -9,12 +9,12 @@ Hệ thống quản lý học sinh, phụ huynh, lớp học (LMS) sử dụng *
 ### **Yêu cầu**
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (hoặc Docker Engine + Docker Compose)
 - Port **3307** (MySQL) và **5000** (backend) trống
+- Cài đặt images mysql version 8.0.33
 
 ### **Chạy lần đầu**
 ```bash
 git clone <repository-url>
 cd <project-folder>
-
 docker-compose --env-file .env.docker up --build
 ```
 
